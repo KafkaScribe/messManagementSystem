@@ -104,9 +104,23 @@ private fun MembersList(
                         Text("৳${"%.2f".format(userDeposit)}")
                     }
                     Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Active Month Cost:")
                         Text("৳${"%.2f".format(totalCost)}")
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Divider()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    val balance = userDeposit - totalCost
+                    val balanceColor = if (balance >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Balance:", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            text = "৳${"%.2f".format(balance)}",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = balanceColor
+                        )
                     }
                 }
             }

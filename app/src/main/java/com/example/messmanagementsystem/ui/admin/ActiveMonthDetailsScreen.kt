@@ -17,9 +17,13 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.example.messmanagementsystem.data.model.Deposit
 import com.example.messmanagementsystem.data.model.Expense
+import com.example.messmanagementsystem.data.model.MealSelection
+import com.example.messmanagementsystem.data.model.User
 import com.example.messmanagementsystem.data.repository.AuthRepository
 import com.example.messmanagementsystem.data.repository.DepositRepository
 import com.example.messmanagementsystem.data.repository.ExpenseRepository
+import com.example.messmanagementsystem.data.repository.MealRepository
+import com.example.messmanagementsystem.data.repository.UserRepository
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
@@ -40,11 +44,15 @@ fun ActiveMonthDetailsScreen(
     val scope = rememberCoroutineScope()
     val depositRepo = remember { DepositRepository() }
     val expenseRepo = remember { ExpenseRepository() }
+    val userRepository = remember { UserRepository() }
+    val mealRepo = remember { MealRepository() }
 
     val monthId = remember { LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM")) }
     
     var deposits by remember { mutableStateOf<List<Deposit>>(emptyList()) }
     var expenses by remember { mutableStateOf<List<Expense>>(emptyList()) }
+    var members by remember { mutableStateOf<List<User>>(emptyList()) }
+    var meals by remember { mutableStateOf<List<MealSelection>>(emptyList()) }
     
     val tabs = listOf("Meal", "Deposit", "Meal Cost", "Individual Other Cost", "Shared Other Cost")
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -52,8 +60,13 @@ fun ActiveMonthDetailsScreen(
     LaunchedEffect(Unit) {
         val user = AuthRepository().getCurrentUserDetails().getOrNull()
         val messId = user?.messId ?: return@LaunchedEffect
+        
+        val users = userRepository.getMembersByMess(messId)
+        members = users
+        
         deposits = depositRepo.getDepositsForMessByMonth(messId, monthId)
         expenses = expenseRepo.getExpensesForMessByMonth(messId, monthId)
+        meals = mealRepo.getMealsForMessByMonth(users.map { it.uid }, monthId)
     }
 
     val generatePdfAndShare = {
@@ -143,13 +156,30 @@ fun ActiveMonthDetailsScreen(
             LazyColumn(modifier = Modifier.weight(1f).padding(16.dp)) {
                 when (selectedTabIndex) {
                     0 -> { // Meal
-                        item { Text("Meal counts for the month (Pending implementation)") }
+                        val totalBreakfast = meals.count { it.hasBreakfast }
+                        val totalLunch = meals.count { it.hasLunch }
+                        val totalDinner = meals.count { it.hasDinner }
+                        val totalMeals = totalBreakfast + totalLunch + totalDinner
+                        item { 
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Text("Total Meals: $totalMeals", style = MaterialTheme.typography.titleMedium)
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text("Breakfast: $totalBreakfast")
+                                    Text("Lunch: $totalLunch")
+                                    Text("Dinner: $totalDinner")
+                                }
+                            }
+                        }
                     }
                     1 -> { // Deposit
                         items(deposits) { deposit ->
                             ListItem(
                                 headlineContent = { Text("৳${deposit.amount}") },
-                                supportingContent = { Text(deposit.note.ifEmpty { "No note" }) },
+                                supportingContent = { 
+                                    val userName = members.find { m -> m.uid == deposit.userId }?.name ?: "Unknown"
+                                    Text("User: $userName" + (if (deposit.note.isNotEmpty()) " | Note: ${deposit.note}" else "")) 
+                                },
                                 overlineContent = { Text(formatDate(deposit.date)) }
                             )
                             Divider()
@@ -161,7 +191,10 @@ fun ActiveMonthDetailsScreen(
                         items(mealCosts) { exp ->
                             ListItem(
                                 headlineContent = { Text("৳${exp.amount}") },
-                                supportingContent = { Text(exp.description.ifEmpty { "Meal Cost" }) },
+                                supportingContent = { 
+                                    val shopperNames = exp.shoppers.mapNotNull { sid -> members.find { m -> m.uid == sid }?.name }.joinToString()
+                                    Text("Shoppers: ${shopperNames.ifEmpty { "None" }}" + (if (exp.description.isNotEmpty()) " | ${exp.description}" else "")) 
+                                },
                                 overlineContent = { Text(formatDate(exp.expenseDate.takeIf { it > 0 } ?: exp.date)) }
                             )
                             Divider()
@@ -173,7 +206,10 @@ fun ActiveMonthDetailsScreen(
                         items(individualCosts) { exp ->
                             ListItem(
                                 headlineContent = { Text("৳${exp.amount}") },
-                                supportingContent = { Text(exp.description) },
+                                supportingContent = { 
+                                    val targetNames = exp.targetUsers.mapNotNull { sid -> members.find { m -> m.uid == sid }?.name }.joinToString()
+                                    Text("Users: ${targetNames.ifEmpty { "None" }} | ${exp.description}") 
+                                },
                                 overlineContent = { Text(formatDate(exp.date)) }
                             )
                             Divider()
@@ -185,7 +221,7 @@ fun ActiveMonthDetailsScreen(
                         items(sharedCosts) { exp ->
                             ListItem(
                                 headlineContent = { Text("৳${exp.amount}") },
-                                supportingContent = { Text(exp.description) },
+                                supportingContent = { Text("Shared among all members | ${exp.description}") },
                                 overlineContent = { Text(formatDate(exp.date)) }
                             )
                             Divider()

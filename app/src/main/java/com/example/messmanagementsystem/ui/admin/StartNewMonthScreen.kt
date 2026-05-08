@@ -10,10 +10,20 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.MaterialTheme
 import com.example.messmanagementsystem.data.repository.AuthRepository
 import com.example.messmanagementsystem.data.repository.MonthRepository
 import kotlinx.coroutines.launch
@@ -30,6 +40,8 @@ fun StartNewMonthScreen(
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val repo = remember { MonthRepository() }
+    var isSaving by remember { mutableStateOf(false) }
+    var monthName by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Start New Month") },
@@ -38,15 +50,29 @@ fun StartNewMonthScreen(
     ) { padding ->
         Column(modifier = Modifier.padding(padding).padding(16.dp)) {
             Text("Create the current month for tracking.")
-            Button(onClick = {
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = monthName,
+                onValueChange = { monthName = it },
+                label = { Text("Month Name (Optional)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                enabled = !isSaving,
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
                 scope.launch {
+                    isSaving = true
                     val user = AuthRepository().getCurrentUserDetails().getOrNull()
                     val messId = user?.messId
                     if (messId == null) {
                         snackbar.showSnackbar("No mess assigned")
+                        isSaving = false
                         return@launch
                     }
-                    val result = repo.startNewMonth(messId)
+                    val result = repo.startNewMonth(messId, monthName)
+                    isSaving = false
                     if (result.isSuccess) {
                         snackbar.showSnackbar("Month started: ${result.getOrNull()}")
                         onBack()
@@ -54,7 +80,13 @@ fun StartNewMonthScreen(
                         snackbar.showSnackbar(result.exceptionOrNull()?.message ?: "Failed to start month")
                     }
                 }
-            }) { Text("Start") }
+            }) {
+                if (isSaving) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Text("Start")
+                }
+            }
         }
     }
 }

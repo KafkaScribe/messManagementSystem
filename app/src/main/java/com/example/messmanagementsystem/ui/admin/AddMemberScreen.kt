@@ -15,8 +15,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import com.example.messmanagementsystem.data.repository.AuthRepository
 import com.example.messmanagementsystem.data.repository.UserRepository
 import kotlinx.coroutines.launch
@@ -34,6 +39,7 @@ fun AddMemberScreen(
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val userRepository = remember { UserRepository() }
+    var isSaving by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Add Mess Member") },
@@ -47,20 +53,25 @@ fun AddMemberScreen(
                 label = { Text("User Email") },
                 modifier = Modifier.fillMaxWidth()
             )
-            Button(onClick = {
+            Button(
+                enabled = !isSaving,
+                onClick = {
                 val email = emailText.value.trim()
                 if (email.isEmpty()) {
                     scope.launch { snackbar.showSnackbar("Enter an email") }
                     return@Button
                 }
                 scope.launch {
+                    isSaving = true
                     val user = AuthRepository().getCurrentUserDetails().getOrNull()
                     val messId = user?.messId
                     if (messId == null) {
                         snackbar.showSnackbar("No mess assigned")
+                        isSaving = false
                         return@launch
                     }
                     val result = userRepository.addMemberByEmail(messId, email)
+                    isSaving = false
                     if (result.isSuccess) {
                         snackbar.showSnackbar("User invited to join the mess")
                         onBack()
@@ -69,7 +80,11 @@ fun AddMemberScreen(
                     }
                 }
             }, modifier = Modifier.padding(top = 12.dp)) {
-                Text("Add")
+                if (isSaving) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Text("Add")
+                }
             }
         }
     }

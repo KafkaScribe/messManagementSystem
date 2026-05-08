@@ -20,12 +20,14 @@ class UserRepository {
         }
     }
 
-    suspend fun changeManager(messId: String, newAdminUserId: String): Result<Unit> {
+    suspend fun changeManager(messId: String, currentAdminUserId: String, newAdminUserId: String): Result<Unit> {
         return try {
             // update mess adminId
             db.collection("messes").document(messId).update(mapOf("adminId" to newAdminUserId)).await()
-            // elevate role
+            // elevate new admin role
             db.collection("users").document(newAdminUserId).update(mapOf("role" to "admin")).await()
+            // downgrade old admin role
+            db.collection("users").document(currentAdminUserId).update(mapOf("role" to "user")).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

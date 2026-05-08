@@ -9,13 +9,13 @@ import java.time.format.DateTimeFormatter
 class MonthRepository {
     private val db = FirebaseFirestore.getInstance()
 
-    suspend fun startNewMonth(messId: String): Result<String> {
+    suspend fun startNewMonth(messId: String, name: String = ""): Result<String> {
         return try {
             val formatter = DateTimeFormatter.ofPattern("yyyy-MM")
             val id = LocalDate.now().format(formatter)
             val ref = db.collection("messes").document(messId)
                 .collection("months").document(id)
-            val info = MonthInfo(id = id, messId = messId, createdAt = System.currentTimeMillis())
+            val info = MonthInfo(id = id, messId = messId, name = name, createdAt = System.currentTimeMillis())
             ref.set(info).await()
             Result.success(id)
         } catch (e: Exception) {

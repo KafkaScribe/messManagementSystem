@@ -23,6 +23,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.Icons
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.CircularProgressIndicator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,6 +35,9 @@ fun AddCostScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var isSaving by remember { mutableStateOf(false) }
+    var shoppersExpanded by remember { mutableStateOf(false) }
+    var targetUsersExpanded by remember { mutableStateOf(false) }
     
     val expenseRepository = remember { ExpenseRepository() }
     val authRepository = remember { AuthRepository() }
@@ -84,31 +91,29 @@ fun AddCostScreen(
             }
 
             Column(modifier = Modifier.padding(16.dp).fillMaxWidth().weight(1f)) {
-                if (selectedTabIndex == 0) {
-                    // Meal Cost
-                    OutlinedTextField(
-                        value = dateString,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Date") },
-                        modifier = Modifier.fillMaxWidth().clickable {
-                            DatePickerDialog(
-                                context,
-                                { _: DatePicker, year: Int, month: Int, dayOfMonth: Int ->
-                                    val newCal = Calendar.getInstance().apply {
-                                        set(year, month, dayOfMonth)
-                                    }
-                                    selectedDate = newCal.timeInMillis
-                                },
-                                calendar.get(Calendar.YEAR),
-                                calendar.get(Calendar.MONTH),
-                                calendar.get(Calendar.DAY_OF_MONTH)
-                            ).show()
-                        },
-                        enabled = false // so clickable works over it
-                    )
-                    Spacer(modifier = Modifier.padding(8.dp))
-                }
+                // Date Picker for both meal and other cost
+                OutlinedTextField(
+                    value = dateString,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Date") },
+                    modifier = Modifier.fillMaxWidth().clickable {
+                        DatePickerDialog(
+                            context,
+                            { _: DatePicker, year: Int, month: Int, dayOfMonth: Int ->
+                                val newCal = Calendar.getInstance().apply {
+                                    set(year, month, dayOfMonth)
+                                }
+                                selectedDate = newCal.timeInMillis
+                            },
+                            calendar.get(Calendar.YEAR),
+                            calendar.get(Calendar.MONTH),
+                            calendar.get(Calendar.DAY_OF_MONTH)
+                        ).show()
+                    },
+                    enabled = false // so clickable works over it
+                )
+                Spacer(modifier = Modifier.padding(8.dp))
 
                 OutlinedTextField(
                     value = amountText.value,
@@ -127,23 +132,40 @@ fun AddCostScreen(
 
                 if (selectedTabIndex == 0) {
                     // Meal Cost - Shoppers Selection
-                    Text("Select Shoppers:", style = MaterialTheme.typography.titleMedium)
-                    LazyColumn(modifier = Modifier.weight(1f)) {
-                        items(members) { user ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth().clickable {
-                                    if (selectedShoppers.contains(user)) selectedShoppers.remove(user)
-                                    else selectedShoppers.add(user)
-                                }.padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Checkbox(
-                                    checked = selectedShoppers.contains(user),
-                                    onCheckedChange = { checked ->
-                                        if (checked) selectedShoppers.add(user) else selectedShoppers.remove(user)
+                    ExposedDropdownMenuBox(
+                        expanded = shoppersExpanded,
+                        onExpandedChange = { shoppersExpanded = !shoppersExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = if (selectedShoppers.isEmpty()) "Select Shoppers" else "${selectedShoppers.size} selected",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Shoppers") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = shoppersExpanded) },
+                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                            modifier = Modifier.menuAnchor().fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = shoppersExpanded,
+                            onDismissRequest = { shoppersExpanded = false }
+                        ) {
+                            members.forEach { user ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Checkbox(
+                                                checked = selectedShoppers.contains(user),
+                                                onCheckedChange = null // handled by row click
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(user.name.ifEmpty { user.email })
+                                        }
+                                    },
+                                    onClick = {
+                                        if (selectedShoppers.contains(user)) selectedShoppers.remove(user)
+                                        else selectedShoppers.add(user)
                                     }
                                 )
-                                Text(user.name.ifEmpty { user.email }, modifier = Modifier.padding(start = 8.dp))
                             }
                         }
                     }
@@ -160,29 +182,47 @@ fun AddCostScreen(
                     }
                     Spacer(modifier = Modifier.padding(8.dp))
                     
-                    Text(if (isShared) "Target Users (Optional for default all):" else "Select Target Users:", style = MaterialTheme.typography.titleMedium)
-                    LazyColumn(modifier = Modifier.weight(1f)) {
-                        items(members) { user ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth().clickable {
-                                    if (targetUsers.contains(user)) targetUsers.remove(user)
-                                    else targetUsers.add(user)
-                                }.padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Checkbox(
-                                    checked = targetUsers.contains(user),
-                                    onCheckedChange = { checked ->
-                                        if (checked) targetUsers.add(user) else targetUsers.remove(user)
+                    ExposedDropdownMenuBox(
+                        expanded = targetUsersExpanded,
+                        onExpandedChange = { targetUsersExpanded = !targetUsersExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = if (targetUsers.isEmpty()) (if (isShared) "All Members" else "Select Targets") else "${targetUsers.size} selected",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text(if (isShared) "Target Users (Optional for default all)" else "Target Users") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = targetUsersExpanded) },
+                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                            modifier = Modifier.menuAnchor().fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = targetUsersExpanded,
+                            onDismissRequest = { targetUsersExpanded = false }
+                        ) {
+                            members.forEach { user ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Checkbox(
+                                                checked = targetUsers.contains(user),
+                                                onCheckedChange = null // handled by row click
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(user.name.ifEmpty { user.email })
+                                        }
+                                    },
+                                    onClick = {
+                                        if (targetUsers.contains(user)) targetUsers.remove(user)
+                                        else targetUsers.add(user)
                                     }
                                 )
-                                Text(user.name.ifEmpty { user.email }, modifier = Modifier.padding(start = 8.dp))
                             }
                         }
                     }
                 }
 
                 Button(
+                    enabled = !isSaving,
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     onClick = {
                         val amount = amountText.value.toDoubleOrNull()
@@ -197,9 +237,12 @@ fun AddCostScreen(
                         }
 
                         scope.launch {
+                            isSaving = true
                             val userDetails = authRepository.getCurrentUserDetails().getOrNull()
                             val messId = userDetails?.messId ?: run {
-                                snackbarHostState.showSnackbar("No mess assigned"); return@launch
+                                snackbarHostState.showSnackbar("No mess assigned")
+                                isSaving = false
+                                return@launch
                             }
                             val uid = authRepository.currentUser?.uid ?: ""
 
@@ -228,6 +271,7 @@ fun AddCostScreen(
                             }
 
                             val result = expenseRepository.addExpense(expense)
+                            isSaving = false
                             if (result.isSuccess) {
                                 snackbarHostState.showSnackbar("Cost added")
                                 onBack()
@@ -237,7 +281,11 @@ fun AddCostScreen(
                         }
                     }
                 ) {
-                    Text("Save")
+                    if (isSaving) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Text("Save")
+                    }
                 }
             }
         }

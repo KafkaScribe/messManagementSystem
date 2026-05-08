@@ -13,6 +13,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,23 +39,11 @@ fun DashboardScreen(
         }
     }
 
-    if (uiState.statusInMess == "invited") {
-        AlertDialog(
-            onDismissRequest = { /* forced to reply */ },
-            title = { Text("Mess Invitation") },
-            text = { Text("You have been invited to join ${uiState.messName ?: "a mess"}. Do you want to accept or decline the invitation?") },
-            confirmButton = {
-                TextButton(onClick = { viewModel.acceptInvitation() }) {
-                    Text("Accept")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.declineInvitation() }) {
-                    Text("Decline")
-                }
-            }
-        )
+    LaunchedEffect(Unit) {
+        viewModel.refreshData()
     }
+
+
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -143,7 +135,8 @@ fun DashboardScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(16.dp)
+                                .verticalScroll(rememberScrollState()),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
@@ -154,32 +147,145 @@ fun DashboardScreen(
                             
                             if (uiState.isLoading) {
                                 CircularProgressIndicator()
-                            } else {
-                                // Mess Metrics Placeholder
+                            } else if (uiState.messId != null && uiState.statusInMess == "approved") {
+                                // Section 1: Monthly Mess Details
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
-                                        Text("Mess Overview", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                        Text("Monthly Mess Details", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text("Total Meals: 0")
-                                            Text("Total Expenses: ৳0.0")
+                                            Text("Mess Name:")
+                                            Text("%s".format(uiState.messName))
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text("Mess Balance:")
+                                            Text("৳%.2f".format(uiState.messBalance))
                                         }
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text("Meal Rate: ৳0.0")
-                                            Text("Your Due: ৳0.0")
+                                            Text("Total Deposit:")
+                                            Text("৳%.2f".format(uiState.totalDeposit))
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text("Total Meal Count:")
+                                            Text("${uiState.totalMealCount}")
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text("Total Meal Cost:")
+                                            Text("৳%.2f".format(uiState.totalMealCost))
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text("Meal Rate:")
+                                            Text("৳%.2f".format(uiState.mealRate))
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text("Total Other Cost:")
+                                            Text("৳%.2f".format(uiState.totalOtherCost))
                                         }
                                     }
                                 }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                // Section 2: My Summary
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text("My Summary", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text("My Meal Count:")
+                                            Text("${uiState.myMealCount}")
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text("My Deposit:")
+                                            Text("৳%.2f".format(uiState.myDeposit))
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text("My Cost:")
+                                            Text("৳%.2f".format(uiState.myCost))
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text("My Balance:")
+                                            Text("৳%.2f".format(uiState.myBalance))
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                // Section 3: All Members Details
+                                Text("All Members Balance & Details", style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.Start))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                uiState.memberStats.forEach { stat ->
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                    ) {
+                                        Column(modifier = Modifier.padding(12.dp)) {
+                                            Text(stat.name, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                Text("Deposit: ৳%.2f".format(stat.deposit), style = MaterialTheme.typography.bodySmall)
+                                                Text("Meals: ${stat.mealCount}", style = MaterialTheme.typography.bodySmall)
+                                            }
+                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                Text("Cost: ৳%.2f".format(stat.cost), style = MaterialTheme.typography.bodySmall)
+                                                Text("Balance: ৳%.2f".format(stat.balance), style = MaterialTheme.typography.bodySmall, color = if (stat.balance < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                Text("Please join a mess to see the dashboard details.")
                             }
                         }
                     }
                     1 -> {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Notifications coming soon...", style = MaterialTheme.typography.bodyLarge)
+                        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                            if (uiState.statusInMess == "invited") {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text("Mess Invitation", style = MaterialTheme.typography.titleLarge)
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text("You have been invited to join ${uiState.messName ?: "a mess"}.")
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.End
+                                        ) {
+                                            TextButton(onClick = { viewModel.declineInvitation() }) {
+                                                Text("Decline", color = MaterialTheme.colorScheme.error)
+                                            }
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Button(onClick = { viewModel.acceptInvitation() }) {
+                                                Text("Accept")
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Text("No new notifications.", style = MaterialTheme.typography.bodyLarge)
+                                }
+                            }
                         }
                     }
                     2 -> {

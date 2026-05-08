@@ -18,6 +18,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,6 +29,7 @@ fun AddDepositScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var isSaving by remember { mutableStateOf(false) }
     val amountText = remember { mutableStateOf("") }
     val noteText = remember { mutableStateOf("") }
     // Repositories
@@ -96,7 +100,9 @@ fun AddDepositScreen(
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.padding(8.dp))
-            Button(onClick = {
+            Button(
+                enabled = !isSaving,
+                onClick = {
                 val amount = amountText.value.toDoubleOrNull()
                 if (amount == null || amount <= 0) {
                     scope.launch { snackbarHostState.showSnackbar("Enter a valid amount") }
@@ -108,9 +114,12 @@ fun AddDepositScreen(
                     return@Button
                 }
                 scope.launch {
+                    isSaving = true
                     val userDetails = authRepository.getCurrentUserDetails().getOrNull()
                     val messId = userDetails?.messId ?: run {
-                        snackbarHostState.showSnackbar("No mess assigned"); return@launch
+                        snackbarHostState.showSnackbar("No mess assigned")
+                        isSaving = false
+                        return@launch
                     }
                     val deposit = Deposit(
                         messId = messId,
@@ -120,6 +129,7 @@ fun AddDepositScreen(
                         date = System.currentTimeMillis()
                     )
                     val result = depositRepository.addDeposit(deposit)
+                    isSaving = false
                     if (result.isSuccess) {
                         snackbarHostState.showSnackbar("Deposit added")
                         onBack()
@@ -128,7 +138,11 @@ fun AddDepositScreen(
                     }
                 }
             }) {
-                Text("Save")
+                if (isSaving) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Text("Save")
+                }
             }
         }
     }

@@ -81,4 +81,25 @@ class MealRepository {
             Result.failure(e)
         }
     }
+
+    suspend fun getMealsForMessByMonth(userIds: List<String>, monthId: String): List<MealSelection> {
+        val result = mutableListOf<MealSelection>()
+        for (userId in userIds) {
+            try {
+                val snapshot = db.collection("users")
+                    .document(userId)
+                    .collection("meals")
+                    .get()
+                    .await()
+                
+                val userMeals = snapshot.documents.mapNotNull { it.toObject(MealSelection::class.java) }
+                    .filter { it.dateId.startsWith(monthId) }
+                
+                result.addAll(userMeals)
+            } catch (e: Exception) {
+                // ignore
+            }
+        }
+        return result
+    }
 }
