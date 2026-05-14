@@ -1,22 +1,22 @@
 package com.example.messmanagementsystem.ui.dashboard
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import com.example.messmanagementsystem.ui.components.*
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,25 +38,50 @@ fun DashboardScreen(
             onNavigateToMessSelection()
         }
     }
-
-    LaunchedEffect(Unit) {
-        viewModel.refreshData()
-    }
-
-
+    LaunchedEffect(Unit) { viewModel.refreshData() }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet(modifier = Modifier.fillMaxWidth(0.6f)) {
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    "Mess Options",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Divider()
+            ModalDrawerSheet(modifier = Modifier.fillMaxWidth(0.65f)) {
+                Spacer(Modifier.height(24.dp))
+                // Drawer header
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Column {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            uiState.userName,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            uiState.role.uppercase(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.Home, null) },
                     label = { Text("Dashboard") },
                     selected = true,
                     onClick = { scope.launch { drawerState.close() } },
@@ -64,9 +89,10 @@ fun DashboardScreen(
                 )
                 if (uiState.role == "admin") {
                     NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.Settings, null) },
                         label = { Text("Admin Panel") },
                         selected = false,
-                        onClick = { 
+                        onClick = {
                             scope.launch { drawerState.close() }
                             onNavigateToAdmin()
                         },
@@ -74,49 +100,100 @@ fun DashboardScreen(
                     )
                 } else if (uiState.statusInMess == "approved") {
                     NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.List, null) },
                         label = { Text("Member Panel") },
                         selected = false,
-                        onClick = { 
+                        onClick = {
                             scope.launch { drawerState.close() }
                             onNavigateToUserPanel()
                         },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
                 }
+                Spacer(Modifier.weight(1f))
+                HorizontalDivider()
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.ExitToApp, null, tint = MaterialTheme.colorScheme.error) },
+                    label = { Text("Logout", color = MaterialTheme.colorScheme.error) },
+                    selected = false,
+                    onClick = onLogout,
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                Spacer(Modifier.height(16.dp))
             }
         }
     ) {
+        val snackbarHostState = remember { SnackbarHostState() }
+        var showEditProfileDialog by remember { mutableStateOf(false) }
+        var editName by remember { mutableStateOf("") }
+        var editPhone by remember { mutableStateOf("") }
+        var isSavingProfile by remember { mutableStateOf(false) }
+        val userRepository = remember { com.example.messmanagementsystem.data.repository.UserRepository() }
+
         Scaffold(
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             topBar = {
                 TopAppBar(
-                    title = { Text("Mess Management System") },
+                    title = {
+                        Column {
+                            Text("Dashboard", fontWeight = FontWeight.Bold)
+                            if (uiState.messName != null) {
+                                Text(
+                                    uiState.messName!!,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+                    },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(Icons.Default.Menu, contentDescription = "Menu")
                         }
                     },
+                    actions = {
+                        IconButton(onClick = { selectedTab = 1 }) {
+                            BadgedBox(
+                                badge = {
+                                    if (uiState.notifications.any { !it.isRead }) {
+                                        Badge()
+                                    }
+                                }
+                            ) {
+                                Icon(Icons.Default.Notifications, contentDescription = "Notifications")
+                            }
+                        }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 )
             },
             bottomBar = {
                 NavigationBar {
                     NavigationBarItem(
-                        icon = { Icon(androidx.compose.material.icons.Icons.Default.Home, contentDescription = "Home") },
+                        icon = { Icon(Icons.Default.Home, null) },
                         label = { Text("Home") },
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 }
                     )
                     NavigationBarItem(
-                        icon = { Icon(androidx.compose.material.icons.Icons.Default.Notifications, contentDescription = "Notification") },
-                        label = { Text("Notification") },
+                        icon = {
+                            BadgedBox(badge = {
+                                if (uiState.notifications.any { !it.isRead }) Badge()
+                            }) {
+                                Icon(Icons.Default.Notifications, null)
+                            }
+                        },
+                        label = { Text("Alerts") },
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 }
                     )
                     NavigationBarItem(
-                        icon = { Icon(androidx.compose.material.icons.Icons.Default.Person, contentDescription = "Profile") },
+                        icon = { Icon(Icons.Default.Person, null) },
                         label = { Text("Profile") },
                         selected = selectedTab == 2,
                         onClick = { selectedTab = 2 }
@@ -124,204 +201,433 @@ fun DashboardScreen(
                 }
             }
         ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
+
+            when (selectedTab) {
+                0 -> HomeTab(uiState, paddingValues, viewModel)
+                1 -> NotificationsTab(uiState, paddingValues, viewModel)
+                2 -> ProfileTab(
+                    uiState, paddingValues,
+                    onEditProfile = {
+                        editName = uiState.userName
+                        editPhone = uiState.phoneNumber
+                        showEditProfileDialog = true
+                    },
+                    onLogout = onLogout
+                )
+            }
+
+            if (showEditProfileDialog) {
+                AlertDialog(
+                    onDismissRequest = { showEditProfileDialog = false },
+                    title = { Text("Edit Profile") },
+                    text = {
+                        Column {
+                            MessOutlinedTextField(value = editName, onValueChange = { editName = it }, label = "Name")
+                            Spacer(modifier = Modifier.height(8.dp))
+                            MessOutlinedTextField(value = editPhone, onValueChange = { editPhone = it }, label = "Phone Number")
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            enabled = !isSavingProfile,
+                            onClick = {
+                                scope.launch {
+                                    isSavingProfile = true
+                                    val result = userRepository.updateProfile(uiState.userId, editName, editPhone)
+                                    isSavingProfile = false
+                                    if (result.isSuccess) {
+                                        showEditProfileDialog = false
+                                        viewModel.refreshData()
+                                    } else {
+                                        snackbarHostState.showSnackbar(result.exceptionOrNull()?.message ?: "Failed to update profile")
+                                    }
+                                }
+                            }
+                        ) {
+                            if (isSavingProfile) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary)
+                            else Text("Save")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(enabled = !isSavingProfile, onClick = { showEditProfileDialog = false }) { Text("Cancel") }
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeTab(uiState: DashboardState, paddingValues: PaddingValues, viewModel: DashboardViewModel) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        // Welcome header
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.primary)
+                }
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text("Good day,", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(uiState.userName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
+        if (uiState.isLoading) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            }
+            return@LazyColumn
+        }
+
+        if (uiState.messId == null || uiState.statusInMess != "approved") {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Box(modifier = Modifier.padding(32.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text("Join or create a mess to see your dashboard.", style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            }
+            return@LazyColumn
+        }
+
+        // Section 1: Mess Overview
+        item {
+            SectionHeader("Mess Overview")
+            Spacer(Modifier.height(12.dp))
+            // Highlighted balance card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
+                elevation = CardDefaults.cardElevation(4.dp)
             ) {
-                when (selectedTab) {
-                    0 -> {
-                        // Header Section
-                        Column(
+                Row(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp).fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("Mess Balance", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
+                        Text(
+                            "৳%.2f".format(uiState.messBalance),
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                    Icon(Icons.Default.Star, null, tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f), modifier = Modifier.size(40.dp))
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StatCard("Total Deposit", "৳%.2f".format(uiState.totalDeposit), modifier = Modifier.weight(1f))
+                StatCard("Other Cost", "৳%.2f".format(uiState.totalOtherCost), modifier = Modifier.weight(1f))
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StatCard("Total Meals", "${uiState.totalMealCount}", modifier = Modifier.weight(1f))
+                StatCard("Meal Rate", "৳%.2f".format(uiState.mealRate), modifier = Modifier.weight(1f))
+            }
+        }
+
+        // Section 2: My Summary
+        item {
+            SectionHeader("My Summary")
+            Spacer(Modifier.height(12.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp).fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("My Balance", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.75f))
+                        Text(
+                            "৳%.2f".format(uiState.myBalance),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (uiState.myBalance >= 0) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.error
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("Meals: ${uiState.myMealCount}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                    }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StatCard("My Deposit", "৳%.2f".format(uiState.myDeposit), containerColor = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.weight(1f))
+                StatCard("My Cost", "৳%.2f".format(uiState.myCost), containerColor = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.weight(1f))
+            }
+        }
+
+        // Section 3: All Members
+        if (uiState.memberStats.isNotEmpty()) {
+            item { SectionHeader("Members Overview") }
+            items(uiState.memberStats) { stat ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(2.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Avatar
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                                .verticalScroll(rememberScrollState()),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "Welcome, ${uiState.userName}!",
-                                style = MaterialTheme.typography.headlineMedium
+                                stat.name.firstOrNull()?.uppercase() ?: "?",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            if (uiState.isLoading) {
-                                CircularProgressIndicator()
-                            } else if (uiState.messId != null && uiState.statusInMess == "approved") {
-                                // Section 1: Monthly Mess Details
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                                ) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
-                                        Text("Monthly Mess Details", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text("Mess Name:")
-                                            Text("%s".format(uiState.messName))
-                                        }
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text("Mess Balance:")
-                                            Text("৳%.2f".format(uiState.messBalance))
-                                        }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text("Total Deposit:")
-                                            Text("৳%.2f".format(uiState.totalDeposit))
-                                        }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text("Total Meal Count:")
-                                            Text("${uiState.totalMealCount}")
-                                        }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text("Total Meal Cost:")
-                                            Text("৳%.2f".format(uiState.totalMealCost))
-                                        }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text("Meal Rate:")
-                                            Text("৳%.2f".format(uiState.mealRate))
-                                        }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text("Total Other Cost:")
-                                            Text("৳%.2f".format(uiState.totalOtherCost))
-                                        }
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                // Section 2: My Summary
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
-                                ) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
-                                        Text("My Summary", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onTertiaryContainer)
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text("My Meal Count:")
-                                            Text("${uiState.myMealCount}")
-                                        }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text("My Deposit:")
-                                            Text("৳%.2f".format(uiState.myDeposit))
-                                        }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text("My Cost:")
-                                            Text("৳%.2f".format(uiState.myCost))
-                                        }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text("My Balance:")
-                                            Text("৳%.2f".format(uiState.myBalance))
-                                        }
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                // Section 3: All Members Details
-                                Text("All Members Balance & Details", style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.Start))
-                                Spacer(modifier = Modifier.height(8.dp))
-                                
-                                uiState.memberStats.forEach { stat ->
-                                    Card(
-                                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                                    ) {
-                                        Column(modifier = Modifier.padding(12.dp)) {
-                                            Text(stat.name, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                                Text("Deposit: ৳%.2f".format(stat.deposit), style = MaterialTheme.typography.bodySmall)
-                                                Text("Meals: ${stat.mealCount}", style = MaterialTheme.typography.bodySmall)
-                                            }
-                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                                Text("Cost: ৳%.2f".format(stat.cost), style = MaterialTheme.typography.bodySmall)
-                                                Text("Balance: ৳%.2f".format(stat.balance), style = MaterialTheme.typography.bodySmall, color = if (stat.balance < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
-                                            }
-                                        }
-                                    }
-                                }
-                            } else {
-                                Text("Please join a mess to see the dashboard details.")
-                            }
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stat.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "Deposit ৳%.0f  •  ${stat.mealCount} meals  •  Cost ৳%.0f".format(stat.deposit, stat.cost),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                "৳%.2f".format(stat.balance),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (stat.balance < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                            )
+                            Text("balance", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-                    1 -> {
-                        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                            if (uiState.statusInMess == "invited") {
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                                ) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
-                                        Text("Mess Invitation", style = MaterialTheme.typography.titleLarge)
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text("You have been invited to join ${uiState.messName ?: "a mess"}.")
-                                        Spacer(modifier = Modifier.height(16.dp))
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.End
-                                        ) {
-                                            TextButton(onClick = { viewModel.declineInvitation() }) {
-                                                Text("Decline", color = MaterialTheme.colorScheme.error)
-                                            }
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Button(onClick = { viewModel.acceptInvitation() }) {
-                                                Text("Accept")
-                                            }
-                                        }
-                                    }
-                                }
-                            } else {
-                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Text("No new notifications.", style = MaterialTheme.typography.bodyLarge)
-                                }
-                            }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onBackground
+    )
+}
+
+@Composable
+private fun NotificationsTab(uiState: DashboardState, paddingValues: PaddingValues, viewModel: DashboardViewModel) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(paddingValues),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        item {
+            Text("Notifications", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        }
+
+        if (uiState.statusInMess == "invited") {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                    elevation = CardDefaults.cardElevation(2.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Notifications, null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Mess Invitation", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         }
-                    }
-                    2 -> {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text("User Profile", style = MaterialTheme.typography.headlineMedium)
-                            Spacer(modifier = Modifier.height(24.dp))
-                            Card(
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text("Name: ${uiState.userName}", style = MaterialTheme.typography.bodyLarge)
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text("Role: ${uiState.role.uppercase()}", style = MaterialTheme.typography.bodyLarge)
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text("Status: ${uiState.statusInMess ?: "Unknown"}", style = MaterialTheme.typography.bodyLarge)
-                                }
+                        Spacer(Modifier.height(8.dp))
+                        Text("You've been invited to join ${uiState.messName ?: "a mess"}.", style = MaterialTheme.typography.bodyMedium)
+                        Spacer(Modifier.height(16.dp))
+                        Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                            OutlinedButton(onClick = { viewModel.declineInvitation() }, enabled = !uiState.isLoading) {
+                                Text("Decline")
                             }
-                            Spacer(modifier = Modifier.height(32.dp))
-                            Button(
-                                onClick = onLogout,
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                            ) {
-                                Icon(imageVector = Icons.Default.ExitToApp, contentDescription = "Logout")
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Logout")
+                            Spacer(Modifier.width(8.dp))
+                            Button(onClick = { viewModel.acceptInvitation() }, enabled = !uiState.isLoading) {
+                                if (uiState.isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary)
+                                else Text("Accept")
                             }
                         }
                     }
                 }
             }
+        }
+
+        if (uiState.notifications.isEmpty() && uiState.statusInMess != "invited") {
+            item {
+                Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.Notifications, null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.height(12.dp))
+                        Text("No notifications yet", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        } else {
+            items(uiState.notifications) { notif ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (notif.isRead) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.secondaryContainer
+                    )
+                ) {
+                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
+                        Box(
+                            modifier = Modifier.size(8.dp).offset(y = 6.dp).clip(CircleShape)
+                                .background(if (notif.isRead) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f) else MaterialTheme.colorScheme.primary)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(notif.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                            Spacer(Modifier.height(2.dp))
+                            Text(notif.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        if (!notif.isRead) {
+                            TextButton(onClick = { viewModel.markNotificationAsRead(notif.id) }) {
+                                Text("Read", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileTab(
+    uiState: DashboardState,
+    paddingValues: PaddingValues,
+    onEditProfile: () -> Unit,
+    onLogout: () -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(paddingValues),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            // Avatar header
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp).fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(
+                        modifier = Modifier.size(72.dp).clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            uiState.userName.firstOrNull()?.uppercase() ?: "U",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text(uiState.userName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(uiState.role.uppercase(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(1.dp)
+            ) {
+                Column(modifier = Modifier.padding(4.dp)) {
+                    ProfileRow(icon = Icons.Default.Phone, label = "Phone", value = uiState.phoneNumber.ifEmpty { "Not set" })
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    ProfileRow(icon = Icons.Default.Star, label = "Role", value = uiState.role.uppercase())
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    ProfileRow(icon = Icons.Default.Info, label = "Status", value = uiState.statusInMess?.replaceFirstChar { it.uppercase() } ?: "Unknown")
+                }
+            }
+        }
+
+        item {
+            MessPrimaryButton(
+                text = "Edit Profile",
+                onClick = onEditProfile,
+                modifier = Modifier.fillMaxWidth(),
+                icon = Icons.Default.Edit
+            )
+        }
+
+        item {
+            Button(
+                onClick = onLogout,
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Icon(Icons.Default.ExitToApp, null)
+                Spacer(Modifier.width(8.dp))
+                Text("Logout", fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(16.dp))
+        Column {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
         }
     }
 }

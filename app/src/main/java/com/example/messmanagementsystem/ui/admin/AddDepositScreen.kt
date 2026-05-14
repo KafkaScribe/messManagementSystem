@@ -13,14 +13,14 @@ import com.example.messmanagementsystem.data.model.User
 import com.example.messmanagementsystem.data.repository.AuthRepository
 import com.example.messmanagementsystem.data.repository.DepositRepository
 import com.example.messmanagementsystem.data.repository.UserRepository
+import com.example.messmanagementsystem.data.repository.NotificationRepository
 import kotlinx.coroutines.launch
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.Icons
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
+import com.example.messmanagementsystem.ui.components.MessOutlinedTextField
+import com.example.messmanagementsystem.ui.components.MessPrimaryButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +36,7 @@ fun AddDepositScreen(
     val authRepository = remember { AuthRepository() }
     val depositRepository = remember { DepositRepository() }
     val userRepository = remember { UserRepository() }
+    val notificationRepository = remember { NotificationRepository() }
 
     val members = remember { mutableStateListOf<User>() }
     var selectedUser by remember { mutableStateOf<User?>(null) }
@@ -86,32 +87,32 @@ fun AddDepositScreen(
             }
 
             Spacer(modifier = Modifier.padding(8.dp))
-            OutlinedTextField(
+            MessOutlinedTextField(
                 value = amountText.value,
                 onValueChange = { amountText.value = it },
-                label = { Text("Amount") },
-                modifier = Modifier.fillMaxWidth()
+                label = "Amount",
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
             )
             Spacer(modifier = Modifier.padding(8.dp))
-            OutlinedTextField(
+            MessOutlinedTextField(
                 value = noteText.value,
                 onValueChange = { noteText.value = it },
-                label = { Text("Note (optional)") },
-                modifier = Modifier.fillMaxWidth()
+                label = "Note (optional)",
+                singleLine = false
             )
-            Spacer(modifier = Modifier.padding(8.dp))
-            Button(
-                enabled = !isSaving,
+            Spacer(modifier = Modifier.padding(12.dp))
+            MessPrimaryButton(
+                text = "Save Deposit",
                 onClick = {
                 val amount = amountText.value.toDoubleOrNull()
                 if (amount == null || amount <= 0) {
                     scope.launch { snackbarHostState.showSnackbar("Enter a valid amount") }
-                    return@Button
+                    return@MessPrimaryButton
                 }
                 val targetUser = selectedUser
                 if (targetUser == null) {
                     scope.launch { snackbarHostState.showSnackbar("Please select a member") }
-                    return@Button
+                    return@MessPrimaryButton
                 }
                 scope.launch {
                     isSaving = true
@@ -131,19 +132,22 @@ fun AddDepositScreen(
                     val result = depositRepository.addDeposit(deposit)
                     isSaving = false
                     if (result.isSuccess) {
+                        notificationRepository.sendNotificationToUsers(
+                            members.map { it.uid },
+                            messId,
+                            "New Deposit",
+                            "A deposit of ৳$amount was added for ${targetUser.name.ifEmpty { targetUser.email }}."
+                        )
                         snackbarHostState.showSnackbar("Deposit added")
                         onBack()
                     } else {
                         snackbarHostState.showSnackbar(result.exceptionOrNull()?.message ?: "Failed to add deposit")
                     }
                 }
-            }) {
-                if (isSaving) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-                } else {
-                    Text("Save")
-                }
-            }
+            },
+                modifier = Modifier.fillMaxWidth(),
+                isLoading = isSaving
+            )
         }
     }
 }

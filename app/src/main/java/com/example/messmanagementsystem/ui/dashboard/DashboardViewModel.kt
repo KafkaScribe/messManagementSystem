@@ -20,6 +20,7 @@ data class MemberStat(
 data class DashboardState(
     val userName: String = "",
     val userId: String = "",
+    val phoneNumber: String = "",
     val messId: String? = null,
     val messName: String? = null,
     val statusInMess: String? = null,
@@ -39,6 +40,8 @@ data class DashboardState(
     val myBalance: Double = 0.0,
     
     val memberStats: List<MemberStat> = emptyList(),
+    
+    val notifications: List<com.example.messmanagementsystem.data.model.Notification> = emptyList(),
 
     val isLoading: Boolean = false,
     val error: String? = null
@@ -51,6 +54,7 @@ class DashboardViewModel : ViewModel() {
     private val depositRepository = com.example.messmanagementsystem.data.repository.DepositRepository()
     private val expenseRepository = com.example.messmanagementsystem.data.repository.ExpenseRepository()
     private val mealRepository = com.example.messmanagementsystem.data.repository.MealRepository()
+    private val notificationRepository = com.example.messmanagementsystem.data.repository.NotificationRepository()
     
     private val _uiState = MutableStateFlow(DashboardState(isLoading = true))
     val uiState: StateFlow<DashboardState> = _uiState
@@ -80,6 +84,7 @@ class DashboardViewModel : ViewModel() {
                         _uiState.value = _uiState.value.copy(
                             userName = user.name.ifEmpty { "User" },
                             userId = user.uid,
+                            phoneNumber = user.phoneNumber,
                             messId = user.messId,
                             messName = messName,
                             statusInMess = user.statusInMess,
@@ -91,6 +96,10 @@ class DashboardViewModel : ViewModel() {
                         if (user.messId != null && user.statusInMess == "approved") {
                             loadDashboardStats(user.messId, user.uid)
                         }
+                        
+                        // Load notifications
+                        val notifs = notificationRepository.getNotificationsForUser(user.uid)
+                        _uiState.value = _uiState.value.copy(notifications = notifs)
                     } else {
                         _uiState.value = _uiState.value.copy(isLoading = false, error = "User data not found")
                     }
@@ -99,6 +108,17 @@ class DashboardViewModel : ViewModel() {
                     _uiState.value = _uiState.value.copy(isLoading = false, error = it.message)
                 }
             )
+        }
+    }
+
+    fun markNotificationAsRead(notificationId: String) {
+        viewModelScope.launch {
+            notificationRepository.markAsRead(notificationId)
+            val uid = _uiState.value.userId
+            if (uid.isNotEmpty()) {
+                val notifs = notificationRepository.getNotificationsForUser(uid)
+                _uiState.value = _uiState.value.copy(notifications = notifs)
+            }
         }
     }
 

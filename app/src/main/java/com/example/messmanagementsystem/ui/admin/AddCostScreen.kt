@@ -17,13 +17,15 @@ import com.example.messmanagementsystem.data.model.User
 import com.example.messmanagementsystem.data.repository.AuthRepository
 import com.example.messmanagementsystem.data.repository.ExpenseRepository
 import com.example.messmanagementsystem.data.repository.UserRepository
+import com.example.messmanagementsystem.data.repository.NotificationRepository
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.Icons
-import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material.icons.filled.DateRange
+import com.example.messmanagementsystem.ui.components.MessPrimaryButton
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.CircularProgressIndicator
@@ -42,6 +44,7 @@ fun AddCostScreen(
     val expenseRepository = remember { ExpenseRepository() }
     val authRepository = remember { AuthRepository() }
     val userRepository = remember { UserRepository() }
+    val notificationRepository = remember { NotificationRepository() }
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("Meal Cost", "Other Cost")
@@ -221,19 +224,18 @@ fun AddCostScreen(
                     }
                 }
 
-                Button(
-                    enabled = !isSaving,
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                MessPrimaryButton(
+                    text = "Save Cost",
                     onClick = {
                         val amount = amountText.value.toDoubleOrNull()
                         if (amount == null || amount <= 0) {
                             scope.launch { snackbarHostState.showSnackbar("Enter a valid amount") }
-                            return@Button
+                            return@MessPrimaryButton
                         }
                         
                         if (selectedTabIndex == 1 && !isShared && targetUsers.isEmpty()) {
                             scope.launch { snackbarHostState.showSnackbar("Select at least one user for individual cost") }
-                            return@Button
+                            return@MessPrimaryButton
                         }
 
                         scope.launch {
@@ -273,22 +275,23 @@ fun AddCostScreen(
                             val result = expenseRepository.addExpense(expense)
                             isSaving = false
                             if (result.isSuccess) {
+                                notificationRepository.sendNotificationToUsers(
+                                    members.map { it.uid },
+                                    messId,
+                                    "New Cost Added",
+                                    "A cost of ৳$amount was added by you or an admin."
+                                )
                                 snackbarHostState.showSnackbar("Cost added")
                                 onBack()
                             } else {
                                 snackbarHostState.showSnackbar(result.exceptionOrNull()?.message ?: "Failed to add cost")
                             }
                         }
-                    }
-                ) {
-                    if (isSaving) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-                    } else {
-                        Text("Save")
-                    }
-                }
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    isLoading = isSaving
+                )
             }
         }
     }
 }
-

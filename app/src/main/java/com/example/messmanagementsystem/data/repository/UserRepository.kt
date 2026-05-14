@@ -78,5 +78,22 @@ class UserRepository {
             Result.failure(e)
         }
     }
+
+    suspend fun removeMember(userId: String): Result<Unit> {
+        return declineInvite(userId)
+    }
+
+    suspend fun updateProfile(userId: String, name: String, phoneNumber: String): Result<Unit> {
+        return try {
+            val updates = mapOf(
+                "name" to name,
+                "phoneNumber" to phoneNumber
+            )
+            db.collection("users").document(userId).update(updates).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
 

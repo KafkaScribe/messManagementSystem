@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.dp
 import com.example.messmanagementsystem.data.model.User
 import com.example.messmanagementsystem.data.repository.AuthRepository
 import com.example.messmanagementsystem.data.repository.UserRepository
+import com.example.messmanagementsystem.data.repository.NotificationRepository
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.Icons
@@ -21,6 +22,7 @@ fun ChangeManagerScreen(
     val scope = rememberCoroutineScope()
     val selectedUser = remember { mutableStateOf<User?>(null) }
     val userRepository = remember { UserRepository() }
+    val notificationRepository = remember { NotificationRepository() }
     var isSaving by remember { mutableStateOf(false) }
     var showConfirmDialog by remember { mutableStateOf(false) }
 
@@ -61,6 +63,12 @@ fun ChangeManagerScreen(
                             isSaving = false
                             showConfirmDialog = false
                             if (result.isSuccess) {
+                                notificationRepository.sendNotificationToUsers(
+                                    users.map { it.uid } + listOf(currentAdminId),
+                                    messId,
+                                    "Manager Changed",
+                                    "The mess manager role has been transferred to ${selectedUser.value?.name?.ifEmpty { selectedUser.value?.email }}."
+                                )
                                 snackbarHostState.showSnackbar("Manager changed")
                                 onBack()
                             } else {

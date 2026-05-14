@@ -15,6 +15,7 @@ import com.example.messmanagementsystem.data.model.User
 import com.example.messmanagementsystem.data.repository.AuthRepository
 import com.example.messmanagementsystem.data.repository.MealRepository
 import com.example.messmanagementsystem.data.repository.UserRepository
+import com.example.messmanagementsystem.data.repository.NotificationRepository
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -33,6 +34,7 @@ fun AddMealScreen(
     val scope = rememberCoroutineScope()
     val userRepo = remember { UserRepository() }
     val mealRepo = remember { MealRepository() }
+    val notificationRepository = remember { NotificationRepository() }
     
     val members = remember { mutableStateListOf<User>() }
     val selections = remember { mutableStateMapOf<String, Triple<Boolean, Boolean, Boolean>>() }
@@ -106,6 +108,17 @@ fun AddMealScreen(
                             )
                             val result = mealRepo.setMealForUser(user.uid, mealSel)
                             if (result.isSuccess) successCount++
+                        }
+                        if (successCount > 0) {
+                            val currentUser = AuthRepository().getCurrentUserDetails().getOrNull()
+                            currentUser?.messId?.let { mId ->
+                                notificationRepository.sendNotificationToUsers(
+                                    members.map { it.uid },
+                                    mId,
+                                    "Meals Updated",
+                                    "Meals have been updated for $dateText."
+                                )
+                            }
                         }
                         snackbar.showSnackbar("Saved meals for $successCount members")
                         isSaving = false

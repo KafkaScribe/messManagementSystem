@@ -26,6 +26,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.MaterialTheme
 import com.example.messmanagementsystem.data.repository.AuthRepository
 import com.example.messmanagementsystem.data.repository.MonthRepository
+import com.example.messmanagementsystem.data.repository.NotificationRepository
 import kotlinx.coroutines.launch
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
@@ -40,6 +41,7 @@ fun StartNewMonthScreen(
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val repo = remember { MonthRepository() }
+    val notificationRepository = remember { NotificationRepository() }
     var isSaving by remember { mutableStateOf(false) }
     var monthName by remember { mutableStateOf("") }
 
@@ -74,6 +76,14 @@ fun StartNewMonthScreen(
                     val result = repo.startNewMonth(messId, monthName)
                     isSaving = false
                     if (result.isSuccess) {
+                        val userRepository = com.example.messmanagementsystem.data.repository.UserRepository()
+                        val members = userRepository.getMembersByMess(messId)
+                        notificationRepository.sendNotificationToUsers(
+                            members.map { it.uid },
+                            messId,
+                            "New Month Started",
+                            "A new month has been started. Balances and calculations are tracking the new active month."
+                        )
                         snackbar.showSnackbar("Month started: ${result.getOrNull()}")
                         onBack()
                     } else {

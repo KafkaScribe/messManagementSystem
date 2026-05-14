@@ -32,6 +32,7 @@ import com.example.messmanagementsystem.ui.admin.AllMembersScreen
 import com.example.messmanagementsystem.ui.admin.ChangeManagerScreen
 import com.example.messmanagementsystem.ui.admin.StartNewMonthScreen
 import com.example.messmanagementsystem.ui.admin.DeleteMessScreen
+import com.example.messmanagementsystem.ui.admin.RemoveMemberScreen
 import com.example.messmanagementsystem.ui.admin.AddMemberScreen
 import com.example.messmanagementsystem.ui.admin.AddMealScreen
 import com.example.messmanagementsystem.ui.admin.ActiveMonthDetailsScreen
@@ -189,7 +190,8 @@ fun AppNavigation() {
                 onChangeManager = { navController.navigate("admin_change_manager") },
                 onStartNewMonth = { navController.navigate("admin_start_new_month") },
                 onAllMonth = { navController.navigate("admin_all_month") },
-                onDeleteMess = { navController.navigate("admin_delete_mess") }
+                onDeleteMess = { navController.navigate("admin_delete_mess") },
+                onRemoveMember = { navController.navigate("admin_remove_member") }
             )
         }
         composable("admin_add_member") { PlaceholderScreen(title = "Add Mess Member") }
@@ -206,6 +208,9 @@ fun AppNavigation() {
         }
         composable("admin_change_manager") {
             ChangeManagerScreen(onBack = { navController.popBackStack() })
+        }
+        composable("admin_remove_member") {
+            RemoveMemberScreen(onBack = { navController.popBackStack() })
         }
         composable("admin_start_new_month") { StartNewMonthScreen(onBack = { navController.popBackStack() }) }
         composable("admin_all_month") { AllMonthScreen(onBack = { navController.popBackStack() }) }
