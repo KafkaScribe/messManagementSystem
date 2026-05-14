@@ -65,7 +65,8 @@ fun MessOutlinedTextField(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     singleLine: Boolean = true,
-    isError: Boolean = false
+    isError: Boolean = false,
+    supportingText: @Composable (() -> Unit)? = null
 ) {
     OutlinedTextField(
         value = value,
@@ -79,6 +80,7 @@ fun MessOutlinedTextField(
         keyboardOptions = keyboardOptions,
         singleLine = singleLine,
         isError = isError,
+        supportingText = supportingText,
         shape = MaterialTheme.shapes.medium,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = MaterialTheme.colorScheme.primary,

@@ -31,8 +31,19 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var hasAttemptedSubmit by remember { mutableStateOf(false) }
 
     val authState by viewModel.authState.collectAsState()
+
+    // Validation
+    val emailError = when {
+        email.isEmpty() -> null
+        !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Enter a valid email address"
+        else -> null
+    }
+    val isEmailValid = email.isNotBlank() && emailError == null
+    val isPasswordFilled = password.isNotBlank()
+    val isFormValid = isEmailValid && isPasswordFilled
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Success) {
@@ -77,12 +88,19 @@ fun LoginScreen(
             // Fields
             MessOutlinedTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = { email = it.trim() },
                 label = "Email",
                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                isError = (hasAttemptedSubmit && email.isBlank()) || emailError != null,
+                supportingText = {
+                    when {
+                        hasAttemptedSubmit && email.isBlank() -> Text("Email is required", color = MaterialTheme.colorScheme.error)
+                        emailError != null -> Text(emailError, color = MaterialTheme.colorScheme.error)
+                    }
+                }
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             MessOutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -97,7 +115,11 @@ fun LoginScreen(
                     }
                 },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                isError = hasAttemptedSubmit && password.isBlank(),
+                supportingText = if (hasAttemptedSubmit && password.isBlank()) {
+                    { Text("Password is required", color = MaterialTheme.colorScheme.error) }
+                } else null
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -120,7 +142,12 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(16.dp))
             MessPrimaryButton(
                 text = "Login",
-                onClick = { viewModel.login(email, password) },
+                onClick = {
+                    hasAttemptedSubmit = true
+                    if (isFormValid) {
+                        viewModel.login(email.trim(), password)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 isLoading = authState == AuthState.Loading
             )
