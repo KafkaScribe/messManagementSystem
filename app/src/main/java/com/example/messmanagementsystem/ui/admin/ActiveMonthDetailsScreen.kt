@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.example.messmanagementsystem.data.model.Deposit
@@ -132,13 +133,14 @@ fun ActiveMonthDetailsScreen(
     Scaffold(
         topBar = { 
             TopAppBar(
-                title = { Text("Active Month Data") },
+                title = { Text("Active Month Data", fontWeight = FontWeight.Bold) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") } },
                 actions = {
                     IconButton(onClick = { generatePdfAndShare() }) {
                         Icon(Icons.Default.Share, contentDescription = "Download Report")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary, titleContentColor = MaterialTheme.colorScheme.onPrimary, navigationIconContentColor = MaterialTheme.colorScheme.onPrimary, actionIconContentColor = MaterialTheme.colorScheme.onPrimary)
             ) 
         }
     ) { padding ->
@@ -182,7 +184,7 @@ fun ActiveMonthDetailsScreen(
                                 },
                                 overlineContent = { Text(formatDate(deposit.date)) }
                             )
-                            Divider()
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         }
                         if (deposits.isEmpty()) { item { Text("No deposits this month.") } }
                     }
@@ -197,7 +199,7 @@ fun ActiveMonthDetailsScreen(
                                 },
                                 overlineContent = { Text(formatDate(exp.expenseDate.takeIf { it > 0 } ?: exp.date)) }
                             )
-                            Divider()
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         }
                         if (mealCosts.isEmpty()) { item { Text("No meal costs this month.") } }
                     }
@@ -212,7 +214,7 @@ fun ActiveMonthDetailsScreen(
                                 },
                                 overlineContent = { Text(formatDate(exp.date)) }
                             )
-                            Divider()
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         }
                         if (individualCosts.isEmpty()) { item { Text("No individual costs this month.") } }
                     }
@@ -224,7 +226,7 @@ fun ActiveMonthDetailsScreen(
                                 supportingContent = { Text("Shared among all members | ${exp.description}") },
                                 overlineContent = { Text(formatDate(exp.date)) }
                             )
-                            Divider()
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         }
                         if (sharedCosts.isEmpty()) { item { Text("No shared costs this month.") } }
                     }

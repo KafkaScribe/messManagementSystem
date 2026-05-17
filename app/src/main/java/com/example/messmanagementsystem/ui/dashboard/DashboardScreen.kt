@@ -12,11 +12,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.messmanagementsystem.ui.components.*
+import com.example.messmanagementsystem.ui.theme.*
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,43 +45,38 @@ fun DashboardScreen(
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet(modifier = Modifier.fillMaxWidth(0.65f)) {
-                Spacer(Modifier.height(24.dp))
-                // Drawer header
+            ModalDrawerSheet(
+                modifier = Modifier.fillMaxWidth(0.72f),
+                drawerContainerColor = MaterialTheme.colorScheme.surface
+            ) {
+                // Drawer header with gradient
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .background(Brush.verticalGradient(listOf(GradientTealStart, GradientTealEnd)))
+                        .padding(horizontal = 20.dp, vertical = 32.dp)
                 ) {
                     Column {
                         Box(
                             modifier = Modifier
                                 .size(56.dp)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
+                                .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                Icons.Default.Person,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(32.dp)
+                            Text(
+                                uiState.userName.firstOrNull()?.uppercase() ?: "U",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimary
                             )
                         }
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            uiState.userName,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            uiState.role.uppercase(),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Spacer(Modifier.height(14.dp))
+                        Text(uiState.userName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                        Text(uiState.role.uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
                     }
                 }
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                Spacer(Modifier.height(8.dp))
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Default.Home, null) },
                     label = { Text("Dashboard") },
@@ -92,10 +89,7 @@ fun DashboardScreen(
                         icon = { Icon(Icons.Default.Settings, null) },
                         label = { Text("Admin Panel") },
                         selected = false,
-                        onClick = {
-                            scope.launch { drawerState.close() }
-                            onNavigateToAdmin()
-                        },
+                        onClick = { scope.launch { drawerState.close() }; onNavigateToAdmin() },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
                 } else if (uiState.statusInMess == "approved") {
@@ -103,15 +97,12 @@ fun DashboardScreen(
                         icon = { Icon(Icons.Default.List, null) },
                         label = { Text("Member Panel") },
                         selected = false,
-                        onClick = {
-                            scope.launch { drawerState.close() }
-                            onNavigateToUserPanel()
-                        },
+                        onClick = { scope.launch { drawerState.close() }; onNavigateToUserPanel() },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
                 }
                 Spacer(Modifier.weight(1f))
-                HorizontalDivider()
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Default.ExitToApp, null, tint = MaterialTheme.colorScheme.error) },
                     label = { Text("Logout", color = MaterialTheme.colorScheme.error) },
@@ -136,13 +127,9 @@ fun DashboardScreen(
                 TopAppBar(
                     title = {
                         Column {
-                            Text("Dashboard", fontWeight = FontWeight.Bold)
+                            Text("Dashboard", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                             if (uiState.messName != null) {
-                                Text(
-                                    uiState.messName!!,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                                )
+                                Text(uiState.messName!!, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
                             }
                         }
                     },
@@ -153,73 +140,40 @@ fun DashboardScreen(
                     },
                     actions = {
                         IconButton(onClick = { selectedTab = 1 }) {
-                            BadgedBox(
-                                badge = {
-                                    if (uiState.notifications.any { !it.isRead }) {
-                                        Badge()
-                                    }
-                                }
-                            ) {
+                            BadgedBox(badge = { if (uiState.notifications.any { !it.isRead }) Badge() }) {
                                 Icon(Icons.Default.Notifications, contentDescription = "Notifications")
                             }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                        actionIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                     )
                 )
             },
             bottomBar = {
-                NavigationBar {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 2.dp) {
+                    NavigationBarItem(icon = { Icon(Icons.Default.Home, null) }, label = { Text("Home") }, selected = selectedTab == 0, onClick = { selectedTab = 0 })
                     NavigationBarItem(
-                        icon = { Icon(Icons.Default.Home, null) },
-                        label = { Text("Home") },
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 }
+                        icon = { BadgedBox(badge = { if (uiState.notifications.any { !it.isRead }) Badge() }) { Icon(Icons.Default.Notifications, null) } },
+                        label = { Text("Alerts") }, selected = selectedTab == 1, onClick = { selectedTab = 1 }
                     )
-                    NavigationBarItem(
-                        icon = {
-                            BadgedBox(badge = {
-                                if (uiState.notifications.any { !it.isRead }) Badge()
-                            }) {
-                                Icon(Icons.Default.Notifications, null)
-                            }
-                        },
-                        label = { Text("Alerts") },
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 }
-                    )
-                    NavigationBarItem(
-                        icon = { Icon(Icons.Default.Person, null) },
-                        label = { Text("Profile") },
-                        selected = selectedTab == 2,
-                        onClick = { selectedTab = 2 }
-                    )
+                    NavigationBarItem(icon = { Icon(Icons.Default.Person, null) }, label = { Text("Profile") }, selected = selectedTab == 2, onClick = { selectedTab = 2 })
                 }
             }
         ) { paddingValues ->
-
             when (selectedTab) {
                 0 -> HomeTab(uiState, paddingValues, viewModel)
                 1 -> NotificationsTab(uiState, paddingValues, viewModel)
-                2 -> ProfileTab(
-                    uiState, paddingValues,
-                    onEditProfile = {
-                        editName = uiState.userName
-                        editPhone = uiState.phoneNumber
-                        showEditProfileDialog = true
-                    },
-                    onLogout = onLogout
-                )
+                2 -> ProfileTab(uiState, paddingValues, onEditProfile = { editName = uiState.userName; editPhone = uiState.phoneNumber; showEditProfileDialog = true }, onLogout = onLogout)
             }
 
             if (showEditProfileDialog) {
                 AlertDialog(
                     onDismissRequest = { showEditProfileDialog = false },
-                    title = { Text("Edit Profile") },
+                    title = { Text("Edit Profile", fontWeight = FontWeight.SemiBold) },
                     text = {
                         Column {
                             MessOutlinedTextField(value = editName, onValueChange = { editName = it }, label = "Name")
@@ -228,29 +182,20 @@ fun DashboardScreen(
                         }
                     },
                     confirmButton = {
-                        Button(
-                            enabled = !isSavingProfile,
-                            onClick = {
-                                scope.launch {
-                                    isSavingProfile = true
-                                    val result = userRepository.updateProfile(uiState.userId, editName, editPhone)
-                                    isSavingProfile = false
-                                    if (result.isSuccess) {
-                                        showEditProfileDialog = false
-                                        viewModel.refreshData()
-                                    } else {
-                                        snackbarHostState.showSnackbar(result.exceptionOrNull()?.message ?: "Failed to update profile")
-                                    }
-                                }
+                        Button(enabled = !isSavingProfile, onClick = {
+                            scope.launch {
+                                isSavingProfile = true
+                                val result = userRepository.updateProfile(uiState.userId, editName, editPhone)
+                                isSavingProfile = false
+                                if (result.isSuccess) { showEditProfileDialog = false; viewModel.refreshData() }
+                                else snackbarHostState.showSnackbar(result.exceptionOrNull()?.message ?: "Failed to update profile")
                             }
-                        ) {
+                        }) {
                             if (isSavingProfile) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary)
                             else Text("Save")
                         }
                     },
-                    dismissButton = {
-                        TextButton(enabled = !isSavingProfile, onClick = { showEditProfileDialog = false }) { Text("Cancel") }
-                    }
+                    dismissButton = { TextButton(enabled = !isSavingProfile, onClick = { showEditProfileDialog = false }) { Text("Cancel") } }
                 )
             }
         }
@@ -260,81 +205,53 @@ fun DashboardScreen(
 @Composable
 private fun HomeTab(uiState: DashboardState, paddingValues: PaddingValues, viewModel: DashboardViewModel) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues),
+        modifier = Modifier.fillMaxSize().padding(paddingValues),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        // Welcome header
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    modifier = Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.primary)
-                }
+                ) { Text(uiState.userName.firstOrNull()?.uppercase() ?: "U", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) }
                 Spacer(Modifier.width(12.dp))
                 Column {
-                    Text("Good day,", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Good day,", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(uiState.userName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 }
             }
         }
 
         if (uiState.isLoading) {
-            item {
-                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            }
+            item { Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = MaterialTheme.colorScheme.primary) } }
             return@LazyColumn
         }
 
         if (uiState.messId == null || uiState.statusInMess != "approved") {
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                ) {
+                Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
                     Box(modifier = Modifier.padding(32.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text("Join or create a mess to see your dashboard.", style = MaterialTheme.typography.bodyLarge)
+                        Text("Join or create a mess to see your dashboard.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
             return@LazyColumn
         }
 
-        // Section 1: Mess Overview
+        // Mess Overview
         item {
-            SectionHeader("Mess Overview")
+            SectionTitle("Mess Overview")
             Spacer(Modifier.height(12.dp))
-            // Highlighted balance card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
-                elevation = CardDefaults.cardElevation(4.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp).fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            GradientHighlightCard(gradientColors = listOf(GradientTealStart, GradientTealEnd)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column {
-                        Text("Mess Balance", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
-                        Text(
-                            "৳%.2f".format(uiState.messBalance),
-                            style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
+                        Text("Mess Balance", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
+                        Text("৳%.2f".format(uiState.messBalance), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
                     }
-                    Icon(Icons.Default.Star, null, tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f), modifier = Modifier.size(40.dp))
+                    Box(modifier = Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f)), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.AccountBalance, null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
+                    }
                 }
             }
             Spacer(Modifier.height(12.dp))
@@ -349,87 +266,44 @@ private fun HomeTab(uiState: DashboardState, paddingValues: PaddingValues, viewM
             }
         }
 
-        // Section 2: My Summary
+        // My Summary
         item {
-            SectionHeader("My Summary")
+            SectionTitle("My Summary")
             Spacer(Modifier.height(12.dp))
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-                elevation = CardDefaults.cardElevation(2.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp).fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            GradientHighlightCard(gradientColors = listOf(GradientIndigoStart, GradientIndigoEnd)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column {
-                        Text("My Balance", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.75f))
-                        Text(
-                            "৳%.2f".format(uiState.myBalance),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = if (uiState.myBalance >= 0) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.error
-                        )
+                        Text("My Balance", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
+                        Text("৳%.2f".format(uiState.myBalance), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        Text("Meals: ${uiState.myMealCount}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                        Text("Meals: ${uiState.myMealCount}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f))
                     }
                 }
             }
             Spacer(Modifier.height(12.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatCard("My Deposit", "৳%.2f".format(uiState.myDeposit), containerColor = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.weight(1f))
-                StatCard("My Cost", "৳%.2f".format(uiState.myCost), containerColor = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.weight(1f))
+                StatCard("My Deposit", "৳%.2f".format(uiState.myDeposit), modifier = Modifier.weight(1f))
+                StatCard("My Cost", "৳%.2f".format(uiState.myCost), modifier = Modifier.weight(1f))
             }
         }
 
-        // Section 3: All Members
+        // Members
         if (uiState.memberStats.isNotEmpty()) {
-            item { SectionHeader("Members Overview") }
+            item { SectionTitle("Members Overview") }
             items(uiState.memberStats) { stat ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(2.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Avatar
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                stat.name.firstOrNull()?.uppercase() ?: "?",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(1.dp)) {
+                    Row(modifier = Modifier.padding(14.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+                            Text(stat.name.firstOrNull()?.uppercase() ?: "?", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         }
                         Spacer(Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(stat.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                            Text(
-                                "Deposit ৳%.0f  •  ${stat.mealCount} meals  •  Cost ৳%.0f".format(stat.deposit, stat.cost),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Text(stat.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                            Text("Deposit ৳%.0f  •  ${stat.mealCount} meals  •  Cost ৳%.0f".format(stat.deposit, stat.cost), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                "৳%.2f".format(stat.balance),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (stat.balance < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                            )
+                            Text("৳%.2f".format(stat.balance), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = if (stat.balance < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
                             Text("balance", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
@@ -440,34 +314,13 @@ private fun HomeTab(uiState: DashboardState, paddingValues: PaddingValues, viewM
 }
 
 @Composable
-private fun SectionHeader(title: String) {
-    Text(
-        title,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.onBackground
-    )
-}
-
-@Composable
 private fun NotificationsTab(uiState: DashboardState, paddingValues: PaddingValues, viewModel: DashboardViewModel) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(paddingValues),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        item {
-            Text("Notifications", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        }
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        item { Text("Notifications", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
 
         if (uiState.statusInMess == "invited") {
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                    elevation = CardDefaults.cardElevation(2.dp)
-                ) {
+                Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer), elevation = CardDefaults.cardElevation(2.dp)) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Notifications, null, tint = MaterialTheme.colorScheme.primary)
@@ -478,9 +331,7 @@ private fun NotificationsTab(uiState: DashboardState, paddingValues: PaddingValu
                         Text("You've been invited to join ${uiState.messName ?: "a mess"}.", style = MaterialTheme.typography.bodyMedium)
                         Spacer(Modifier.height(16.dp))
                         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                            OutlinedButton(onClick = { viewModel.declineInvitation() }, enabled = !uiState.isLoading) {
-                                Text("Decline")
-                            }
+                            OutlinedButton(onClick = { viewModel.declineInvitation() }, enabled = !uiState.isLoading) { Text("Decline") }
                             Spacer(Modifier.width(8.dp))
                             Button(onClick = { viewModel.acceptInvitation() }, enabled = !uiState.isLoading) {
                                 if (uiState.isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary)
@@ -496,7 +347,7 @@ private fun NotificationsTab(uiState: DashboardState, paddingValues: PaddingValu
             item {
                 Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Notifications, null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Default.Notifications, null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
                         Spacer(Modifier.height(12.dp))
                         Text("No notifications yet", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -504,29 +355,16 @@ private fun NotificationsTab(uiState: DashboardState, paddingValues: PaddingValu
             }
         } else {
             items(uiState.notifications) { notif ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (notif.isRead) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.secondaryContainer
-                    )
-                ) {
+                Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, colors = CardDefaults.cardColors(containerColor = if (notif.isRead) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.secondaryContainer)) {
                     Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
-                        Box(
-                            modifier = Modifier.size(8.dp).offset(y = 6.dp).clip(CircleShape)
-                                .background(if (notif.isRead) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f) else MaterialTheme.colorScheme.primary)
-                        )
+                        Box(modifier = Modifier.size(8.dp).offset(y = 6.dp).clip(CircleShape).background(if (notif.isRead) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f) else MaterialTheme.colorScheme.primary))
                         Spacer(Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(notif.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                             Spacer(Modifier.height(2.dp))
                             Text(notif.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        if (!notif.isRead) {
-                            TextButton(onClick = { viewModel.markNotificationAsRead(notif.id) }) {
-                                Text("Read", style = MaterialTheme.typography.labelSmall)
-                            }
-                        }
+                        if (!notif.isRead) { TextButton(onClick = { viewModel.markNotificationAsRead(notif.id) }) { Text("Read", style = MaterialTheme.typography.labelSmall) } }
                     }
                 }
             }
@@ -535,83 +373,37 @@ private fun NotificationsTab(uiState: DashboardState, paddingValues: PaddingValu
 }
 
 @Composable
-private fun ProfileTab(
-    uiState: DashboardState,
-    paddingValues: PaddingValues,
-    onEditProfile: () -> Unit,
-    onLogout: () -> Unit
-) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(paddingValues),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+private fun ProfileTab(uiState: DashboardState, paddingValues: PaddingValues, onEditProfile: () -> Unit, onLogout: () -> Unit) {
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
-            // Avatar header
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp).fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box(
-                        modifier = Modifier.size(72.dp).clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            uiState.userName.firstOrNull()?.uppercase() ?: "U",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
+            Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, elevation = CardDefaults.cardElevation(2.dp)) {
+                Box(modifier = Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(GradientTealStart, GradientTealEnd)))) {
+                    Column(modifier = Modifier.padding(24.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(modifier = Modifier.size(72.dp).clip(CircleShape).background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
+                            Text(uiState.userName.firstOrNull()?.uppercase() ?: "U", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        Text(uiState.userName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                        Text(uiState.role.uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
                     }
-                    Spacer(Modifier.height(12.dp))
-                    Text(uiState.userName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text(uiState.role.uppercase(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                 }
             }
         }
-
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(1.dp)
-            ) {
+            Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(1.dp)) {
                 Column(modifier = Modifier.padding(4.dp)) {
                     ProfileRow(icon = Icons.Default.Phone, label = "Phone", value = uiState.phoneNumber.ifEmpty { "Not set" })
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
                     ProfileRow(icon = Icons.Default.Star, label = "Role", value = uiState.role.uppercase())
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
                     ProfileRow(icon = Icons.Default.Info, label = "Status", value = uiState.statusInMess?.replaceFirstChar { it.uppercase() } ?: "Unknown")
                 }
             }
         }
-
+        item { MessPrimaryButton(text = "Edit Profile", onClick = onEditProfile, modifier = Modifier.fillMaxWidth(), icon = Icons.Default.Edit) }
         item {
-            MessPrimaryButton(
-                text = "Edit Profile",
-                onClick = onEditProfile,
-                modifier = Modifier.fillMaxWidth(),
-                icon = Icons.Default.Edit
-            )
-        }
-
-        item {
-            Button(
-                onClick = onLogout,
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Icon(Icons.Default.ExitToApp, null)
-                Spacer(Modifier.width(8.dp))
-                Text("Logout", fontWeight = FontWeight.Bold)
+            Button(onClick = onLogout, modifier = Modifier.fillMaxWidth().height(54.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error), shape = MaterialTheme.shapes.medium) {
+                Icon(Icons.Default.ExitToApp, null); Spacer(Modifier.width(8.dp)); Text("Logout", fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -619,10 +411,7 @@ private fun ProfileTab(
 
 @Composable
 private fun ProfileRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(16.dp))
         Column {

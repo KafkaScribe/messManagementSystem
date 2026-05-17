@@ -1,10 +1,14 @@
 package com.example.messmanagementsystem.ui.auth
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -17,11 +21,13 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -33,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.messmanagementsystem.ui.components.MessOutlinedTextField
 import com.example.messmanagementsystem.ui.components.MessPrimaryButton
+import com.example.messmanagementsystem.ui.theme.*
 
 data class CountryCode(val country: String, val code: String, val flag: String)
 
@@ -122,208 +129,263 @@ fun RegisterScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 28.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(48.dp))
-            // Header
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                "Create Account",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                "Join your mess today",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(40.dp))
-
-            // Full Name
-            MessOutlinedTextField(
-                value = name,
-                onValueChange = { if (it.length <= 100) name = it },
-                label = "Full Name",
-                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                isError = (hasAttemptedSubmit && name.isBlank()) || nameError != null,
-                supportingText = {
-                    when {
-                        hasAttemptedSubmit && name.isBlank() -> Text("Name is required", color = MaterialTheme.colorScheme.error)
-                        nameError != null -> Text(nameError, color = MaterialTheme.colorScheme.error)
-                        name.isNotEmpty() -> Text("${name.length}/100", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Email
-            MessOutlinedTextField(
-                value = email,
-                onValueChange = { email = it.trim() },
-                label = "Email",
-                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                isError = (hasAttemptedSubmit && email.isBlank()) || emailError != null,
-                supportingText = {
-                    when {
-                        hasAttemptedSubmit && email.isBlank() -> Text("Email is required", color = MaterialTheme.colorScheme.error)
-                        emailError != null -> Text(emailError, color = MaterialTheme.colorScheme.error)
-                    }
-                }
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Phone Number with Country Code
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top
+            // ── Gradient header ──
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
+                            )
+                        )
+                    )
+                    .padding(top = 56.dp, bottom = 36.dp),
+                contentAlignment = Alignment.Center
             ) {
-                // Country code dropdown
-                Box(modifier = Modifier.padding(top = 8.dp)) {
-                    OutlinedButton(
-                        onClick = { countryDropdownExpanded = true },
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
                         modifier = Modifier
-                            .height(56.dp)
-                            .widthIn(min = 110.dp),
-                        shape = MaterialTheme.shapes.medium,
-                        contentPadding = PaddingValues(horizontal = 12.dp)
+                            .size(68.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            "${selectedCountryCode.flag} ${selectedCountryCode.code}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
                         Icon(
-                            Icons.Default.ArrowDropDown,
-                            contentDescription = "Select country code",
-                            modifier = Modifier.size(20.dp)
+                            imageVector = Icons.Outlined.PersonAdd,
+                            contentDescription = null,
+                            modifier = Modifier.size(34.dp),
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
-                    DropdownMenu(
-                        expanded = countryDropdownExpanded,
-                        onDismissRequest = { countryDropdownExpanded = false }
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text(
+                        "Create Account",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Join your mess today",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                    )
+                }
+            }
+
+            // ── Form card ──
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset(y = (-20).dp)
+                    .padding(horizontal = 20.dp),
+                shape = MaterialTheme.shapes.large,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Full Name
+                    MessOutlinedTextField(
+                        value = name,
+                        onValueChange = { if (it.length <= 100) name = it },
+                        label = "Full Name",
+                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                        isError = (hasAttemptedSubmit && name.isBlank()) || nameError != null,
+                        supportingText = {
+                            when {
+                                hasAttemptedSubmit && name.isBlank() -> Text("Name is required", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                                nameError != null -> Text(nameError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                                name.isNotEmpty() -> Text("${name.length}/100", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Email
+                    MessOutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it.trim() },
+                        label = "Email Address",
+                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        isError = (hasAttemptedSubmit && email.isBlank()) || emailError != null,
+                        supportingText = {
+                            when {
+                                hasAttemptedSubmit && email.isBlank() -> Text("Email is required", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                                emailError != null -> Text(emailError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Phone Number with Country Code
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top
                     ) {
-                        countryCodes.forEach { cc ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        "${cc.flag} ${cc.country} (${cc.code})",
-                                        style = MaterialTheme.typography.bodyMedium
+                        // Country code dropdown
+                        Box(modifier = Modifier.padding(top = 8.dp)) {
+                            OutlinedButton(
+                                onClick = { countryDropdownExpanded = true },
+                                modifier = Modifier
+                                    .height(56.dp)
+                                    .widthIn(min = 110.dp),
+                                shape = MaterialTheme.shapes.medium,
+                                contentPadding = PaddingValues(horizontal = 12.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.onSurface
+                                )
+                            ) {
+                                Text(
+                                    "${selectedCountryCode.flag} ${selectedCountryCode.code}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Icon(
+                                    Icons.Default.ArrowDropDown,
+                                    contentDescription = "Select country code",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = countryDropdownExpanded,
+                                onDismissRequest = { countryDropdownExpanded = false }
+                            ) {
+                                countryCodes.forEach { cc ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                "${cc.flag} ${cc.country} (${cc.code})",
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                        },
+                                        onClick = {
+                                            selectedCountryCode = cc
+                                            countryDropdownExpanded = false
+                                        }
                                     )
-                                },
-                                onClick = {
-                                    selectedCountryCode = cc
-                                    countryDropdownExpanded = false
                                 }
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        MessOutlinedTextField(
+                            value = phoneNumber,
+                            onValueChange = { input ->
+                                val digitsOnly = input.filter { it.isDigit() }
+                                if (digitsOnly.length <= 11) phoneNumber = digitsOnly
+                            },
+                            label = "Phone Number",
+                            leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = (hasAttemptedSubmit && phoneNumber.isBlank()) || phoneError != null,
+                            supportingText = {
+                                when {
+                                    hasAttemptedSubmit && phoneNumber.isBlank() -> Text("Phone number is required", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                                    phoneError != null -> Text(phoneError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                                    phoneNumber.isNotEmpty() -> Text("${phoneNumber.length}/11 digits", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Password
+                    MessOutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = "Password",
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                    contentDescription = if (passwordVisible) "Hide" else "Show",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        },
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        isError = hasAttemptedSubmit && !isPasswordValid && password.isNotEmpty(),
+                        supportingText = if (hasAttemptedSubmit && password.isBlank()) {
+                            { Text("Password is required", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                        } else null
+                    )
+
+                    // Password Strength Indicator
+                    AnimatedVisibility(visible = password.isNotEmpty()) {
+                        Column {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            PasswordStrengthIndicator(strengthScore = strengthScore)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            PasswordRequirementsList(
+                                hasMinLength = hasMinLength,
+                                hasUppercase = hasUppercase,
+                                hasLowercase = hasLowercase,
+                                hasDigit = hasDigit,
+                                hasSpecial = hasSpecial
                             )
                         }
                     }
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                MessOutlinedTextField(
-                    value = phoneNumber,
-                    onValueChange = { input ->
-                        val digitsOnly = input.filter { it.isDigit() }
-                        if (digitsOnly.length <= 11) phoneNumber = digitsOnly
-                    },
-                    label = "Phone Number",
-                    leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    isError = (hasAttemptedSubmit && phoneNumber.isBlank()) || phoneError != null,
-                    supportingText = {
-                        when {
-                            hasAttemptedSubmit && phoneNumber.isBlank() -> Text("Phone number is required", color = MaterialTheme.colorScheme.error)
-                            phoneError != null -> Text(phoneError, color = MaterialTheme.colorScheme.error)
-                            phoneNumber.isNotEmpty() -> Text("${phoneNumber.length}/11 digits", color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                    // Error
+                    AnimatedVisibility(
+                        visible = authState is AuthState.Error,
+                        enter = fadeIn() + slideInVertically()
+                    ) {
+                        if (authState is AuthState.Error) {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp),
+                                shape = MaterialTheme.shapes.small
+                            ) {
+                                Text(
+                                    (authState as AuthState.Error).message,
+                                    color = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.padding(12.dp),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
                         }
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Password
-            MessOutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = "Password",
-                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = if (passwordVisible) "Hide" else "Show"
-                        )
                     }
-                },
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                isError = hasAttemptedSubmit && !isPasswordValid && password.isNotEmpty(),
-                supportingText = if (hasAttemptedSubmit && password.isBlank()) {
-                    { Text("Password is required", color = MaterialTheme.colorScheme.error) }
-                } else null
-            )
 
-            // Password Strength Indicator
-            if (password.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                PasswordStrengthIndicator(strengthScore = strengthScore)
-                Spacer(modifier = Modifier.height(8.dp))
-                PasswordRequirementsList(
-                    hasMinLength = hasMinLength,
-                    hasUppercase = hasUppercase,
-                    hasLowercase = hasLowercase,
-                    hasDigit = hasDigit,
-                    hasSpecial = hasSpecial
-                )
-            }
+                    Spacer(modifier = Modifier.height(24.dp))
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (authState is AuthState.Error) {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        (authState as AuthState.Error).message,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(12.dp),
-                        style = MaterialTheme.typography.bodyMedium
+                    MessPrimaryButton(
+                        text = "Create Account",
+                        onClick = {
+                            hasAttemptedSubmit = true
+                            if (isFormValid) {
+                                val fullPhone = "${selectedCountryCode.code}$phoneNumber"
+                                viewModel.register(name.trim(), email.trim(), password, fullPhone)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        isLoading = authState == AuthState.Loading,
+                        enabled = !hasAttemptedSubmit || isFormValid
                     )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            MessPrimaryButton(
-                text = "Create Account",
-                onClick = {
-                    hasAttemptedSubmit = true
-                    if (isFormValid) {
-                        val fullPhone = "${selectedCountryCode.code}$phoneNumber"
-                        viewModel.register(name.trim(), email.trim(), password, fullPhone)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                isLoading = authState == AuthState.Loading,
-                enabled = !hasAttemptedSubmit || isFormValid
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-            TextButton(onClick = onNavigateLogin, modifier = Modifier.fillMaxWidth()) {
-                Text("Already have an account? ", style = MaterialTheme.typography.bodyMedium)
+            // ── Bottom link ──
+            Spacer(modifier = Modifier.weight(1f))
+            TextButton(
+                onClick = onNavigateLogin,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp)
+            ) {
+                Text("Already have an account? ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
                     "Login",
                     style = MaterialTheme.typography.bodyMedium,
@@ -331,7 +393,6 @@ fun RegisterScreen(
                     color = MaterialTheme.colorScheme.primary
                 )
             }
-            Spacer(modifier = Modifier.height(48.dp))
         }
     }
 }
@@ -347,11 +408,11 @@ private fun PasswordStrengthIndicator(strengthScore: Int) {
         else -> ""
     }
     val strengthColor = when (strengthScore) {
-        0, 1 -> Color(0xFFD32F2F)
-        2 -> Color(0xFFF57C00)
-        3 -> Color(0xFFFBC02D)
-        4 -> Color(0xFF388E3C)
-        5 -> Color(0xFF1B5E20)
+        0, 1 -> Color(0xFFDC2626)
+        2 -> Color(0xFFEA580C)
+        3 -> Color(0xFFCA8A04)
+        4 -> Color(0xFF16A34A)
+        5 -> Color(0xFF059669)
         else -> Color.Gray
     }
 
@@ -372,25 +433,25 @@ private fun PasswordStrengthIndicator(strengthScore: Int) {
         ) {
             Text(
                 "Password Strength",
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 strengthLabel,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
                 color = animatedColor
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(6.dp))
         LinearProgressIndicator(
             progress = { animatedProgress },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(6.dp)
-                .clip(MaterialTheme.shapes.small),
+                .height(5.dp)
+                .clip(MaterialTheme.shapes.extraSmall),
             color = animatedColor,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant
+            trackColor = MaterialTheme.colorScheme.outlineVariant
         )
     }
 }
@@ -418,7 +479,7 @@ private fun PasswordRequirementsList(
 @Composable
 private fun PasswordRequirementItem(text: String, isMet: Boolean) {
     val color by animateColorAsState(
-        targetValue = if (isMet) Color(0xFF388E3C) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+        targetValue = if (isMet) Color(0xFF059669) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
         label = "req_color"
     )
     Row(
@@ -431,7 +492,7 @@ private fun PasswordRequirementItem(text: String, isMet: Boolean) {
             modifier = Modifier.size(14.dp),
             tint = color
         )
-        Spacer(modifier = Modifier.width(6.dp))
+        Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),

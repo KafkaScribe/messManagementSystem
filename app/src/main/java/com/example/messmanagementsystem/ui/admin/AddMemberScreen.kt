@@ -1,40 +1,23 @@
 package com.example.messmanagementsystem.ui.admin
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import com.example.messmanagementsystem.data.repository.AuthRepository
 import com.example.messmanagementsystem.data.repository.UserRepository
+import com.example.messmanagementsystem.ui.components.MessOutlinedTextField
+import com.example.messmanagementsystem.ui.components.MessPrimaryButton
 import kotlinx.coroutines.launch
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.Icons
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddMemberScreen(
-    onBack: () -> Unit
-) {
+fun AddMemberScreen(onBack: () -> Unit) {
     val emailText = remember { mutableStateOf("") }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -42,51 +25,37 @@ fun AddMemberScreen(
     var isSaving by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Add Mess Member") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") } }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Add Member", fontWeight = FontWeight.Bold) },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") } },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary, titleContentColor = MaterialTheme.colorScheme.onPrimary, navigationIconContentColor = MaterialTheme.colorScheme.onPrimary)
+            )
+        },
         snackbarHost = { SnackbarHost(hostState = snackbar) }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).padding(16.dp)) {
-            OutlinedTextField(
-                value = emailText.value,
-                onValueChange = { emailText.value = it },
-                label = { Text("User Email") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Button(
-                enabled = !isSaving,
+        Column(modifier = Modifier.padding(padding).padding(20.dp)) {
+            MessOutlinedTextField(value = emailText.value, onValueChange = { emailText.value = it }, label = "User Email", leadingIcon = { Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(20.dp)) })
+            Spacer(modifier = Modifier.height(20.dp))
+            MessPrimaryButton(
+                text = "Invite Member",
+                isLoading = isSaving,
+                modifier = Modifier.fillMaxWidth(),
                 onClick = {
-                val email = emailText.value.trim()
-                if (email.isEmpty()) {
-                    scope.launch { snackbar.showSnackbar("Enter an email") }
-                    return@Button
-                }
-                scope.launch {
-                    isSaving = true
-                    val user = AuthRepository().getCurrentUserDetails().getOrNull()
-                    val messId = user?.messId
-                    if (messId == null) {
-                        snackbar.showSnackbar("No mess assigned")
+                    val email = emailText.value.trim()
+                    if (email.isEmpty()) { scope.launch { snackbar.showSnackbar("Enter an email") }; return@MessPrimaryButton }
+                    scope.launch {
+                        isSaving = true
+                        val user = AuthRepository().getCurrentUserDetails().getOrNull()
+                        val messId = user?.messId
+                        if (messId == null) { snackbar.showSnackbar("No mess assigned"); isSaving = false; return@launch }
+                        val result = userRepository.addMemberByEmail(messId, email)
                         isSaving = false
-                        return@launch
-                    }
-                    val result = userRepository.addMemberByEmail(messId, email)
-                    isSaving = false
-                    if (result.isSuccess) {
-                        snackbar.showSnackbar("User invited to join the mess")
-                        onBack()
-                    } else {
-                        snackbar.showSnackbar(result.exceptionOrNull()?.message ?: "Failed to invite member")
+                        if (result.isSuccess) { snackbar.showSnackbar("User invited to join the mess"); onBack() }
+                        else snackbar.showSnackbar(result.exceptionOrNull()?.message ?: "Failed to invite member")
                     }
                 }
-            }, modifier = Modifier.padding(top = 12.dp)) {
-                if (isSaving) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-                } else {
-                    Text("Add")
-                }
-            }
+            )
         }
     }
 }
-
